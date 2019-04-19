@@ -1,0 +1,17 @@
+---
+# Setup tasks
+
+# Base packages
+- name: install base packages
+  yum: name={{ item }} state=latest
+  with_items:
+    - "nethogs"
+    - "iftop"
+
+# Setup /backup mount
+- name: Run backup mount setup
+  include: backup_mount.yml
+
+- name: Run backup utils install
+  include: backup_utils.yml
+

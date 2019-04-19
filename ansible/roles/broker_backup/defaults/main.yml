@@ -1,0 +1,21 @@
+---
+# defaults for broker-backup
+
+broker_master: 'broker1.foo.example.com'
+broker_util_ver: 'v2.13.0'
+
+broker_bk_fstype: ext4
+broker_bk_device: '/dev/xvdf'
+broker_bk_mount: '/backup'
+broker_bk_data_dir: "{{broker_bk_mount}}/broker/data"
+broker_bk_utils_dir: "{{broker_bk_mount}}/broker/utils"
+broker_bk_utils_bin: "{{broker_bk_utils_dir}}/bin"
+broker_bk_utils: "{{broker_bk_utils_dir }}/backup-utils"
+broker_bk_logs_dir: "{{broker_bk_utils_dir }}/logs"
+
+broker_user: 'brokerbackup'
+broker_group: 'users'
+
+broker_util_repo: 'https://github.com/github/backup-utils/releases/download'
+broker_util_file: 'github-backup-utils-{{ broker_util_ver }}.tar.gz'
+

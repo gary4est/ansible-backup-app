@@ -1,0 +1,10 @@
+# File under Ansible Control
+
+{{ broker_bk_logs_dir }}/backup.log {
+    daily
+    rotate 11
+    missingok
+    notifempty
+    create 0644 {{ broker_user }} {{ broker_group }}
+    compress
+}

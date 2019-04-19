@@ -1,0 +1,46 @@
+#!/bin/bash
+
+## broker Backup
+
+logfile="{{ broker_bk_logs_dir }}/backup.log"
+backup_script="{{ broker_bk_utils_dir }}/bin/broker-backup"
+wavefront_token="{{ wavefront_token }}"
+
+#log backup start
+echo "`date '+%b %d %H:%M:%S'` ${HOSTNAME}: broker-backup backup start" >> $logfile
+
+#create Wavefront Event
+wavefront_event=$(curl -s -X POST --header "Content-Type: application/json" --header "Accept: application/json" --header "Authorization: Bearer ${wavefront_token}" -d "{
+  \"name\": \"broker_backup\",
+  \"annotations\": {
+    \"severity\": \"info\",
+    \"type\": \"backup\",
+    \"details\": \"broker backup\"
+  },
+   \"tags\": [
+       \"broker\",
+       \"backup\"
+    ]
+}" "https://{{wavefront_org }}.wavefront.com/api/v2/event")
+
+wavefront_event_id=$(echo $wavefront_event | jq .response.id | tr -d '"')
+wavefront_event_id1=$(echo $wavefront_event_id | awk -F ":" '{print $1}')
+wavefront_event_id2=$(echo $wavefront_event_id | awk -F ":" '{print $2}')
+
+echo "`date '+%b %d %H:%M:%S'` ${HOSTNAME}: broker-backup backup wavefront event: $wavefront_event_id" >> $logfile
+
+#Run Backup
+tfile=$(mktemp)
+/usr/bin/time -o $tfile -f "\t%E real" $backup_script -v 1>>${logfile}
+runtime=$(cat $tfile | awk '{print $1}')
+rm $tfile
+
+#Update log backup is complete
+echo "`date '+%b %d %H:%M:%S'` ${HOSTNAME}: broker-backup backup complete, runtime: $runtime" >> $logfile
+
+#Close Wavefront event
+curl -s -X POST --header "Content-Type: application/json" --header "Accept: application/json" --header "Authorization: Bearer ${wavefront_token}" "https://{{ wavefront_org }}.wavefront.com/api/v2/event/${wavefront_event_id1}%3A${wavefront_event_id2}/close" -o /dev/null
+
+exit
+
+

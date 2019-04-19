@@ -1,0 +1,20 @@
+---
+- name: Create filesystem on ebs device
+  filesystem:
+    fstype: "{{broker_bk_fstype}}"
+    dev: "{{broker_bk_device}}"
+
+- name: Create backup mount directory
+  file:
+      path: "{{broker_bk_mount}}"
+      state: directory
+      mode: 0755
+
+- name: Mount backup directory
+  mount:
+    path: "{{broker_bk_mount}}"
+    src: "{{broker_bk_device}}"
+    fstype: "{{broker_bk_fstype}}"
+    state: mounted
+
+

@@ -1,0 +1,117 @@
+---
+## Create backup user, setup ssh-key for access to broker server for backups
+- include_vars: secrets.yml
+
+- name: Create broker Backup User
+  user:
+    name: "{{broker_user}}"
+    comment: "broker Backup"
+    group: "{{broker_group}}"
+
+- name: Create Backup User ssh-key dir
+  file:
+    path: "/home/{{broker_user}}/.ssh"
+    state: directory
+    mode: 0755
+    owner: "{{ broker_user }}"
+    group: "{{ broker_group }}"
+
+- name: Add ssh-key id_rsa
+  template:
+    src: id_rsa.j2
+    dest: "/home/{{broker_user}}/.ssh/id_rsa"
+    mode: 0600
+    owner: "{{ broker_user }}"
+    group: "{{ broker_group }}"
+
+- name: Add ssh-key id_rsa.pub
+  template:
+    src: id_rsa.pub.j2
+    dest: "/home/{{broker_user}}/.ssh/id_rsa.pub"
+    mode: 0644
+    owner: "{{ broker_user }}"
+    group: "{{ broker_group }}"
+
+## Create backup directories and utils
+- name: Create Backup Data Directory
+  file:
+    path: "{{ broker_bk_data_dir }}"
+    state: directory
+    mode: 0755
+    owner: "{{ broker_user }}"
+    group: "{{ broker_group }}"
+
+- name: Create Backup Utils Directory
+  file:
+    path: "{{ broker_bk_utils_dir }}"
+    state: directory
+    mode: 0755
+    owner: "{{ broker_user }}"
+    group: "{{ broker_group }}"
+
+- name: Create Backup Utils Bin Directory
+  file:
+    path: "{{ broker_bk_utils_bin }}"
+    state: directory
+    mode: 0755
+    owner: "{{ broker_user }}"
+    group: "{{ broker_group }}"
+
+## Setup backup utils
+- name: Install broker Backup Utilities
+  unarchive:
+    src: "{{ broker_util_repo }}/{{ broker_util_ver }}/{{ broker_util_file }}"
+    dest: "{{ broker_bk_utils_dir }}"
+    copy: no
+    creates: "{{ broker_bk_utils_dir }}/broker-backup-utils-{{ broker_util_ver }}"
+    group: "{{ broker_group }}"
+    owner: "{{ broker_user }}"
+
+- name: Create symlink to backup_utils
+  file:
+    src: "{{ broker_bk_utils_dir }}/broker-backup-utils-{{ broker_util_ver }}"
+    dest: "{{ broker_bk_utils }}"
+    owner: "{{ broker_user }}"
+    group: "{{ broker_group }}"
+    state: link
+
+- name: Create Backup Utils logs Directory
+  file:
+    path: "{{ broker_bk_logs_dir }}"
+    state: directory
+    mode: 0755
+    owner: "{{ broker_user }}"
+    group: "{{ broker_group }}"
+
+- name: Create broker backup config
+  template:
+    src: backup.config.j2
+    dest: "{{ broker_bk_utils }}/backup.config"
+    owner: "{{ broker_user }}"
+    group: "{{ broker_group }}"
+    mode: 0644
+
+- name: Create broker-backup script
+  template:
+    src: broker-backup.j2
+    dest: "{{ broker_bk_utils_bin }}/broker-backup"
+    owner: "{{ broker_user }}"
+    group: "{{ broker_group }}"
+    mode: 0754
+
+- name: Setup Cronjob to run backup utils
+  cron:
+    name: broker backup
+    minute: "5"
+    hour: "*/3"
+    user: "{{ broker_user }}"
+    job: "{{ broker_bk_utils_bin }}/broker-backup 2>&1"
+    cron_file: broker_backup
+
+## Log rotation
+- name: Setup log rotation for backup utils log
+  template:
+      src: backup_utils_logrotate.j2
+      dest: /etc/logrotate.d/broker_backup_utils
+      mode: 0644
+

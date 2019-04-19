@@ -1,0 +1,8 @@
+
+[broker]
+broker[1:2].foo.example.com
+
+[brokerbk]
+brokerbk1.foo.example.com
+
+
